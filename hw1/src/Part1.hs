@@ -1,3 +1,5 @@
+{-# LANGUAGE InstanceSigs #-}
+
 module Part1
        ( DayOfWeek(..)
        , nextDay
@@ -31,6 +33,7 @@ import Data.List.NonEmpty (NonEmpty (..))
 data DayOfWeek = Monday | Tuesday | Wednsday | Thursday | Friday | Saturday | Sunday deriving (Show)
 
 instance Enum DayOfWeek where
+    toEnum :: Int -> DayOfWeek
     toEnum x = case x of
         0 -> Monday
         1 -> Tuesday
@@ -41,6 +44,7 @@ instance Enum DayOfWeek where
         6 -> Sunday
         _ -> error "illegal day of week"
 
+    fromEnum :: DayOfWeek -> Int
     fromEnum x = case x of
         Monday   -> 0
         Tuesday  -> 1
@@ -95,11 +99,13 @@ fromNatToInt Z     = 0
 fromNatToInt (S a) = 1 + (fromNatToInt a)
 
 instance Eq Nat where
+    (==) :: Nat -> Nat -> Bool
     (==) Z Z         = True
     (==) (S a) (S b) = a == b
     (==) _ _         = False
 
 instance Ord Nat where
+    (<=) :: Nat -> Nat -> Bool
     (<=) Z _         = True
     (<=) _ Z         = False
     (<=) (S a) (S b) = a <= b
