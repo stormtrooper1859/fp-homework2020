@@ -1,13 +1,14 @@
-module Part2.Unit (part2UnitTestTree) where
+module Part2.Unit (testSuite) where
 
 import Test.Tasty (TestTree)
 import Test.Tasty.Hspec (Spec, describe, it, shouldBe, testSpec)
 
 import Data.List.NonEmpty (NonEmpty (..))
+
 import Part2 (joinWith, splitOn)
 
-part2UnitTestTree :: IO TestTree
-part2UnitTestTree = testSpec "Part2 unit tests" part2Unit
+testSuite :: IO TestTree
+testSuite = testSpec "Part2 unit tests" part2Unit
 
 part2Unit :: Spec
 part2Unit = do

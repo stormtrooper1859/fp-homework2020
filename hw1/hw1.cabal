@@ -18,7 +18,7 @@ tested-with:         GHC == 8.0.1
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Part1, Part2
+  exposed-modules:     Part1, Part2, Part3, Part4
   ghc-options:         -Wall
   build-depends:       base >= 4.9 && < 5
   default-language:    Haskell2010
@@ -27,7 +27,7 @@ test-suite hw1-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Main.hs
-  other-modules:       Part1.Unit, Part2.Unit, Part2.PropertyBased
+  other-modules:       Part1.Unit, Part2.PropertyBased, Part2.Unit, Part3.Unit, Part4.Unit
   build-depends:       base
                      , hw1
                      , hspec

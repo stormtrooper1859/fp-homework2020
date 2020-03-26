@@ -1,11 +1,11 @@
-module Part1.Unit (part1UnitTestTree) where
+module Part1.Unit (testSuite) where
 
 import Part1 (Nat (..), divide, fromIntToNat, fromNatToInt, isEven, mul, plus, remainder, sub)
 import Test.Tasty (TestTree)
 import Test.Tasty.Hspec (Spec, describe, it, shouldBe, testSpec)
 
-part1UnitTestTree :: IO TestTree
-part1UnitTestTree = testSpec "Part1 unit tests" part1Unit
+testSuite :: IO TestTree
+testSuite = testSpec "Part1 unit tests" part1Unit
 
 part1Unit :: Spec
 part1Unit = do

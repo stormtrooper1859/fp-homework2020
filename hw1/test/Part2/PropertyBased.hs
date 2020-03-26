@@ -1,4 +1,4 @@
-module Part2.PropertyBased ( part2PropertyBased ) where
+module Part2.PropertyBased ( testSuite ) where
 
 import Hedgehog
 
@@ -38,5 +38,5 @@ testSplit :: TestTree
 testSplit = testProperty "Split and join string" splitAndJoinString
 
 
-part2PropertyBased :: TestTree
-part2PropertyBased = testGroup "Part2 Property-based tests" [testTree, testSplit]
+testSuite :: TestTree
+testSuite = testGroup "Part2 Property-based tests" [testTree, testSplit]

@@ -8,8 +8,10 @@ module Part2
 import Data.List.NonEmpty (NonEmpty (..))
 
 
--- first task is in Part1
+-- task1 is in Part1
 
+
+-- task2
 splitOn :: Eq a => a -> [a] -> NonEmpty [a]
 splitOn delimiter list = foldr worker ([] :| []) list
     where
