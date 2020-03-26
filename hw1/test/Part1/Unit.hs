@@ -1,8 +1,14 @@
-import Part1 (Nat (..), divide, fromIntToNat, fromNatToInt, isEven, mul, plus, remainder, sub)
-import Test.Hspec
+module Part1.Unit (part1UnitTestTree) where
 
-main :: IO ()
-main = hspec $ do
+import Part1 (Nat (..), divide, fromIntToNat, fromNatToInt, isEven, mul, plus, remainder, sub)
+import Test.Tasty (TestTree)
+import Test.Tasty.Hspec (Spec, describe, it, shouldBe, testSpec)
+
+part1UnitTestTree :: IO TestTree
+part1UnitTestTree = testSpec "Part1 unit tests" part1Unit
+
+part1Unit :: Spec
+part1Unit = do
     describe "Nat" $ do
         describe "Nat to Nnt" $ do
             it "of 3 is correct" $ do

@@ -24,6 +24,8 @@ module Part1
        , insertInTree
        , fromList
        , removeFromTree
+       , toList
+       , tempTree
        ) where
 
 
@@ -190,3 +192,17 @@ removeFromTree node@(Node val@(x :| _) left right) value =
 
 tempTree :: Tree Int
 tempTree = Node (9 :| [9, 9]) (Node (2 :| []) Leaf (Node (3 :| [3, 3, 3, 3, 3]) Leaf Leaf)) (Leaf)
+
+
+-- task from Part2
+instance Foldable Tree where
+    foldr :: (a -> b -> b) -> b -> Tree a -> b
+    foldr  _ z Leaf                 = z
+    foldr f z (Node (x :| xs)  left right) = foldr f (f x (foldr f (foldr f z right) xs)) left
+
+    foldMap :: Monoid m => (a -> m) -> Tree a -> m
+    foldMap _ Leaf                  = mempty
+    foldMap f (Node (x :| xs) left right) = foldMap f left <> f x <> foldMap f xs <> foldMap f right
+
+toList :: Tree a -> [a]
+toList x = foldr (:) [] x
