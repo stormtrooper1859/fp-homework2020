@@ -4,9 +4,20 @@ module Part1
        , afterDays
        , isWeekend
        , daysToParty
+
+       , Nat(..)
+       , plus
+       , mul
+       , sub
+       , fromIntToNat
+       , fromNatToInt
+       , isEven
+       , divide
+       , remainder
        ) where
 
 
+-- task1
 data DayOfWeek = Monday | Tuesday | Wednsday | Thursday | Friday | Saturday | Sunday deriving (Show)
 
 instance Enum DayOfWeek where
@@ -46,3 +57,54 @@ daysToParty :: DayOfWeek -> Int
 daysToParty Friday = 0
 daysToParty day    = 1 + daysToParty (nextDay day)
 
+
+-- task2
+data Nat = Z | S Nat deriving (Show)
+
+plus :: Nat -> Nat -> Nat
+plus a Z     = a
+plus a (S b) = S (a `plus` b)
+
+mul :: Nat -> Nat -> Nat
+mul _ Z     = Z
+mul a (S b) = a `plus` (a `mul` b)
+
+sub :: Nat -> Nat -> Nat
+sub Z _         = Z
+sub a Z         = a
+sub (S a) (S b) = a `sub` b
+
+fromIntToNat :: Int -> Nat
+fromIntToNat 0 = Z
+fromIntToNat a
+    | a < 0 = error "Nat must be non-negative"
+    | otherwise = S $ fromIntToNat $ a - 1
+
+fromNatToInt :: Nat -> Int
+fromNatToInt Z     = 0
+fromNatToInt (S a) = 1 + (fromNatToInt a)
+
+instance Eq Nat where
+    (==) Z Z         = True
+    (==) (S a) (S b) = a == b
+    (==) _ _         = False
+
+instance Ord Nat where
+    (<=) Z _         = True
+    (<=) _ Z         = False
+    (<=) (S a) (S b) = a <= b
+
+isEven :: Nat -> Bool
+isEven Z         = True
+isEven (S Z)     = False
+isEven (S (S a)) = isEven a
+
+divide :: Nat -> Nat -> Nat
+divide _ Z = error "Divide by zero"
+divide a b = (iterSub Z (S a)) `sub` (S Z)
+    where iterSub acc t
+            | t == Z    = acc
+            | otherwise = iterSub (S acc) (t `sub` b)
+
+remainder :: Nat -> Nat -> Nat
+remainder a b = sub a ((a `divide` b) `mul` b)
