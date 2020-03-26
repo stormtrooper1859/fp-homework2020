@@ -1,6 +1,7 @@
 module Part1.Unit (testSuite) where
 
-import Part1 (Nat (..), divide, fromIntToNat, fromNatToInt, isEven, mul, plus, remainder, sub)
+import Part1 (DayOfWeek (..), Nat (..), afterDays, daysToParty, divide, fromIntToNat, fromNatToInt,
+              isEven, isWeekend, mul, nextDay, plus, remainder, sub)
 import Test.Tasty (TestTree)
 import Test.Tasty.Hspec (Spec, describe, it, shouldBe, testSpec)
 
@@ -9,6 +10,38 @@ testSuite = testSpec "Part1 unit tests" part1Unit
 
 part1Unit :: Spec
 part1Unit = do
+    describe "DayOfWeek" $ do
+        describe "nextDay" $ do
+            it "Tuesday -> Wednsday" $ do
+                nextDay Tuesday `shouldBe` Wednsday
+
+            it "Sunday -> Monday" $ do
+                nextDay Sunday `shouldBe` Monday
+
+        describe "afterDays" $ do
+            it "afterDays work correctly loop" $ do
+                afterDays Friday 3 `shouldBe` Monday
+
+            it "afterDays should loop" $ do
+                afterDays Friday 7 `shouldBe` Friday
+
+            it "afterDays work fast on large arguments" $ do
+                afterDays Friday 1000000007 `shouldBe` Thursday
+
+        describe "isWeekend" $ do
+            it "is weekend" $ do
+                isWeekend Saturday `shouldBe` True
+
+            it "isn't weekend" $ do
+                isWeekend Thursday `shouldBe` False
+
+        describe "daysToParty" $ do
+            it "from Monday" $ do
+                daysToParty Monday `shouldBe` 4
+
+            it "from Saturday" $ do
+                daysToParty Saturday `shouldBe` 6
+
     describe "Nat" $ do
         describe "Nat to Nnt" $ do
             it "of 3 is correct" $ do

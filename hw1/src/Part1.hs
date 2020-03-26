@@ -56,6 +56,10 @@ instance Enum DayOfWeek where
         Saturday -> 5
         Sunday   -> 6
 
+instance Eq DayOfWeek where
+    (==) :: DayOfWeek -> DayOfWeek -> Bool
+    (==) a b = fromEnum a == fromEnum b
+
 nextDay :: DayOfWeek -> DayOfWeek
 nextDay Sunday = Monday
 nextDay day    = succ day
@@ -176,17 +180,16 @@ extractLeftNode _ = error "Unreachable"
 removeFromTree :: Ord a => Tree a -> a -> Tree a
 removeFromTree Leaf _ = Leaf
 removeFromTree (Node (x :| []) left Leaf) value
-    | x == value = left
-removeFromTree (Node (x :| []) left right) value
     | x == value =
-        let (v, tree) = extractLeftNode right
-        in Node v left tree
+        left
 removeFromTree (Node (x :| x2 : xs) left right) value
-    | x == value = Node (x2 :| xs) left right
-removeFromTree node@(Node val@(x :| _) left right) value =
+    | x == value =
+        Node (x2 :| xs) left right
+removeFromTree (Node val@(x :| _) left right) value =
     case compare value x of
         LT -> Node val (removeFromTree left value) right
-        EQ -> node
+        EQ -> let (v, tree) = extractLeftNode right
+              in Node v left tree
         GT -> Node val left (removeFromTree right value)
 
 
@@ -197,7 +200,7 @@ tempTree = Node (9 :| [9, 9]) (Node (2 :| []) Leaf (Node (3 :| [3, 3, 3, 3, 3]) 
 -- task from Part2
 instance Foldable Tree where
     foldr :: (a -> b -> b) -> b -> Tree a -> b
-    foldr  _ z Leaf                 = z
+    foldr  _ z Leaf                        = z
     foldr f z (Node (x :| xs)  left right) = foldr f (f x (foldr f (foldr f z right) xs)) left
 
     foldMap :: Monoid m => (a -> m) -> Tree a -> m

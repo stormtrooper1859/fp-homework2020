@@ -3,7 +3,7 @@ module Part3.Unit (testSuite) where
 import Test.Tasty (TestTree)
 import Test.Tasty.Hspec (Spec, describe, it, shouldBe, testSpec)
 
-import Part3 (maybeConcat, eitherConcat, NonEmpty(..),ThisOrThat (..), Name(..), Endo(..))
+import Part3 (Endo (..), Name (..), NonEmpty (..), ThisOrThat (..), eitherConcat, maybeConcat)
 
 testSuite :: IO TestTree
 testSuite = testSpec "Part3 unit tests" part3Unit
@@ -37,7 +37,7 @@ part3Unit = do
 
         it "Both and That" $ do
             Both "say no" "to " <> That "kek" `shouldBe` Both "say no" "to kek"
-            
+
         it "This and Both" $ do
             This "and " <> Both "what?" "nothing" `shouldBe` Both "and what?" "nothing"
 
