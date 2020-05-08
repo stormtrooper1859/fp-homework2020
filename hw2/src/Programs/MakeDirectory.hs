@@ -12,7 +12,7 @@ import System.FilePath
 
 import Typings (ApplicationContext (..), ApplicationState (..), FileSystem (..), Subprogram,
                 SubprogramEnv, SubprogramException (..))
-import Utils (combineProgram, getDirectory, throwIf, getNewLocalPath, replaceFs)
+import Utils (combineProgram, getDirectory, getNewLocalPath, replaceFs, throwIf)
 import Vendor.FilePath (normaliseEx)
 
 

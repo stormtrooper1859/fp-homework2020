@@ -7,46 +7,42 @@ module Utils
        , isPathOutside
        , getNewLocalPath
        , getDefault
+       , throwMaybe
+       , isFile
        ) where
 
 import Options.Applicative
 
 import Control.Monad.Except
 import Control.Monad.State
-import Control.Monad.Trans
-import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
-import Data.IORef
-import Data.List
-import Data.Semigroup ((<>))
-import System.Directory
-import System.Environment
-import System.FilePath
 import Data.HashMap
+import Data.List
+import System.FilePath
 
-import Debug.Trace
-
-import Typings (ApplicationContext (..), ApplicationState (..), SubprogramException (..), SubprogramEnv, Subprogram, FileSystem(..) )
+import Typings (ApplicationContext (..), ApplicationState (..), FileSystem (..), Subprogram,
+                SubprogramEnv, SubprogramException (..))
 import Vendor.FilePath (normaliseEx)
+
 
 parserPrefs :: ParserPrefs
 parserPrefs = ParserPrefs "" False False False False 1
 
 
-
+-- принимает аргументы и запускает на них парсер и передает в параметры программы
 combineProgram :: (Show a) => (a -> SubprogramEnv (Maybe String)) -> ParserInfo a -> Subprogram
-combineProgram program parser = \args -> do
+combineProgram program parser progName = \args -> do
     let params = execParserPure parserPrefs parser args
-    cdCommandWrapper2 program params
+    resultWrapper program params progName
 
 
-cdCommandWrapper2 :: (Show a) => (a -> SubprogramEnv (Maybe String)) -> ParserResult a -> SubprogramEnv (Maybe String)
-cdCommandWrapper2 program (Success a) = program a
-cdCommandWrapper2 program (Failure msg) = do
-    let (helpMessage, b, c) = execFailure msg "<prog name must be here>"
+-- обрабатываем результат парсера
+resultWrapper :: (Show a) => (a -> SubprogramEnv (Maybe String)) -> ParserResult a -> String -> SubprogramEnv (Maybe String)
+resultWrapper program (Success a) _ = program a
+resultWrapper _ (Failure msg) progName = do
+    let (helpMessage, _, _) = execFailure msg progName
     throwError $ SubprogramArgumentsException $ show helpMessage
-
-
+resultWrapper _ f _ = throwError $ SubprogramArgumentsException $ show f
 
 
 getDirectory :: FilePath -> SubprogramEnv FileSystem
@@ -72,12 +68,17 @@ replaceFs filePath newFolder = do
             let k = findWithDefault Symlink currentKey children
             t <- replaceFsInternal k restPath
             return dir{getChildrens = Data.HashMap.insert currentKey t children}
-        replaceFsInternal dir [] = return newFolder
+        replaceFsInternal _ [] = return newFolder
         replaceFsInternal _ _ = throwError $ SubprogramRuntimeException "Заданный путь не существует"
 
 
 throwIf :: Bool -> SubprogramException -> SubprogramEnv ()
-throwIf condition error = if condition then throwError error else return ()
+throwIf condition err = if condition then throwError err else return ()
+
+
+throwMaybe :: Maybe a -> SubprogramException -> SubprogramEnv a
+throwMaybe (Just a) _  = return a
+throwMaybe Nothing err = throwError err
 
 
 -- проверяем что остались в рабочем каталоге
@@ -92,11 +93,17 @@ getNewLocalPath path = do
     let localPath = getCurrentStatePath appState
     let currentFullPath = normaliseEx $ rootPath </> localPath
     let futureFullPath = normaliseEx $ currentFullPath </> path
-    let newLocalPath = makeRelative rootPath futureFullPath 
+    let newLocalPath = makeRelative rootPath futureFullPath
+    throwIf (not (isValid newLocalPath)) $ SubprogramRuntimeException "Запрещенное название пути"
     throwIf (isPathOutside newLocalPath) $ SubprogramRuntimeException "Нельзя покинуть рабочий каталог"
     return newLocalPath
 
 
 getDefault :: Maybe a -> a -> a
-getDefault Nothing a = a
+getDefault Nothing a  = a
 getDefault (Just a) _ = a
+
+
+isFile :: FileSystem -> Bool
+isFile (File _ _) = True
+isFile _          = False

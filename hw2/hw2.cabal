@@ -45,7 +45,7 @@ library
 executable hw2
   hs-source-dirs:      app
   main-is:             Main.hs
-  -- ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , hw2
                      , mtl

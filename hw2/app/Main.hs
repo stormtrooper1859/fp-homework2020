@@ -2,48 +2,41 @@
 
 module Main where
 
-import Typings (FileSystem(..), ApplicationContext(..), ApplicationState(..), SubprogramException(..), Subprogram)
-import Programs (getProgram)
-import Vendor.FilePath (normaliseEx)
-import Utils.FileSystem (getFileSystem, syncWithFS)
-
-import Control.Monad.State
--- import Control.Monad.Reader
-import Control.Monad.Trans
 import Control.Monad.Trans.Reader
-import Control.Monad.Trans.Except
--- import Control.Monad.Trans.Maybe
--- import Control.Applicative
-import Data.IORef
-import System.Environment
+import Data.Semigroup ((<>))
+import Options.Applicative
 import System.Directory
 import System.FilePath
-import Options.Applicative
-import Data.Semigroup ((<>))
--- import Control.Monad.Error
-import Control.Monad.Except
-import Data.List
-import System.IO
-
-import Debug.Trace
 
 import FileManager (commandLoop)
+import Typings (ApplicationContext (..), ApplicationState (..))
+import Utils (getDefault)
+import Utils.FileSystem (getFileSystem, syncWithFS)
+import Vendor.FilePath (normaliseEx)
 
 
+data FileManagerOptions = FileManagerOptions { queryPath :: Maybe String } deriving (Show)
 
-getRoot :: IO String
-getRoot = return "./test_folder"
 
+fileManagerParamsParser :: Parser FileManagerOptions
+fileManagerParamsParser = FileManagerOptions
+    <$> optional ( argument str
+        ( metavar "PATH"
+        <> help "Show content of directory by PATH" ))
+
+
+fileManagerCli :: ParserInfo FileManagerOptions
+fileManagerCli = info (fileManagerParamsParser <**> helper) ( fullDesc
+    <> progDesc "Show content of directory by PATH"
+    <> header "ls - utiliry for showing subdirectories and files in directory" )
 
 
 main :: IO ()
 main = do
-    args <- getArgs
-    -- putStrLn $ concat args
-    root <- getRoot
+    params <- execParser fileManagerCli
+    let root = getDefault (queryPath params) "."
     currentDirectory <- getCurrentDirectory
     let realRoot = normaliseEx $ currentDirectory </> root
     fs <- getFileSystem $ realRoot
     newFileSystem <- runReaderT (commandLoop $ ApplicationState "." fs) (ApplicationContext realRoot fs)
     syncWithFS realRoot fs (getCurrentFileSystem newFileSystem)
-

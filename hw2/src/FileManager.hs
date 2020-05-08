@@ -1,80 +1,60 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module FileManager (
-    commandLoop
-) where
+module FileManager
+       ( commandLoop
+       ) where
 
-import Typings (FileSystem(..), ApplicationContext(..), ApplicationState(..), SubprogramException(..), Subprogram)
-import Programs (getProgram)
-import Vendor.FilePath (normaliseEx)
-import Utils.FileSystem (getFileSystem, syncWithFS)
 
 import Control.Monad.State
--- import Control.Monad.Reader
-import Control.Monad.Trans
-import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Except
--- import Control.Monad.Trans.Maybe
--- import Control.Applicative
-import Data.IORef
-import System.Environment
-import System.Directory
+import Control.Monad.Trans.Reader
 import System.FilePath
-import Options.Applicative
-import Data.Semigroup ((<>))
--- import Control.Monad.Error
-import Control.Monad.Except
-import Data.List
 import System.IO
 
-import Debug.Trace
+import Programs (getProgram)
+import Typings (ApplicationContext (..), ApplicationState (..), SubprogramEnv,
+                SubprogramException (..))
+import Vendor.FilePath (normaliseEx)
 
 
+resultHandler :: (Either SubprogramException (Maybe String), ApplicationState) -> ApplicationState -> IO ApplicationState
+resultHandler ((Left (SubprogramArgumentsException text)), _) dflt = do
+    putStrLn $ text
+    return dflt
+resultHandler ((Left (SubprogramRuntimeException text)), _) dflt = do
+    putStrLn $ "Ошибочка вышла: " ++ text
+    return dflt
+resultHandler ((Right Nothing), st) _ = do
+    return st
+resultHandler ((Right (Just a)), st) _ = do
+    putStrLn a
+    return st
 
-executeProgram :: ApplicationState -> Subprogram -> [String] -> ReaderT ApplicationContext IO ApplicationState
-executeProgram state program args = do
+
+executeProgram :: ApplicationState -> ([String] -> SubprogramEnv (Maybe String)) -> [String] -> ReaderT ApplicationContext IO ApplicationState
+executeProgram appState program args = do
     context <- ask
-    let newState1 = runState (runExceptT $ runReaderT (program args) context) state
-    -- let newState = execState (runExceptT $ cdCommandWrapper2 params) state
-    newState <- lift $ smth newState1 state
-    -- lift $ putStrLn $ getCurrentStatePath newState
+    let returnedValue = runState (runExceptT $ runReaderT (program args) context) appState
+    newState <- lift $ resultHandler returnedValue appState
     return newState
 
 
 commandLoop :: ApplicationState -> ReaderT ApplicationContext IO ApplicationState
-commandLoop state = do
+commandLoop appState = do
     context <- ask
     let root = getRootPath context
-    -- relPath <- lift $ readIORef $ currentPath ApplicationContext
-    let relPath = getCurrentStatePath state
+    let relPath = getCurrentStatePath appState
     lift $ putStr $ (normaliseEx (root </> relPath)) ++ " > "
     lift $ hFlush stdout
     line <- lift getLine
-    if
-        line == ""
-    then 
-        commandLoop state
+    if line == "" then
+        commandLoop appState
     else do
-        let (x : xs) = words line
-        case x of
+        let (progName : args) = words line
+        case progName of
             "q" -> do
-                t2 <- ask
-                return $ state
+                return $ appState
             _ -> do
-                let prog = getProgram x
-                newState <- executeProgram state prog xs
+                let prog = getProgram progName
+                newState <- executeProgram appState (prog progName) args
                 commandLoop newState
-
-
-smth :: (Either SubprogramException (Maybe String), ApplicationState) -> ApplicationState -> IO ApplicationState
-smth ((Left (SubprogramArgumentsException text)), state) dflt = do
-    putStrLn $ text
-    return dflt
-smth ((Left (SubprogramRuntimeException text)), state) dflt = do
-    putStrLn $ "ошибочка вышла: " ++ text
-    return dflt
-smth ((Right Nothing), state) _ = do
-    return state
-smth ((Right (Just a)), state) _ = do
-    putStrLn a
-    return state

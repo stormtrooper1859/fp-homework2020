@@ -2,7 +2,6 @@ module Vendor.FilePath
        ( normaliseEx
        ) where
 
-import System.Directory (canonicalizePath)
 import qualified System.FilePath as Native
 import System.Info.Extra
 
@@ -23,7 +22,7 @@ import System.Info.Extra
 --   This function is not based on the 'normalise' function from the @filepath@ library, as that function
 --   is quite broken.
 normaliseEx :: FilePath -> FilePath
-normaliseEx xs | a:b:xs <- xs, isWindows && sep a && sep b = '/' : f ('/':xs) -- account for UNC paths being double //
+normaliseEx xs | a:b:xs6 <- xs, isWindows && sep a && sep b = '/' : f ('/':xs6) -- account for UNC paths being double //
                | otherwise = f xs
     where
         sep = Native.isPathSeparator
@@ -39,15 +38,15 @@ normaliseEx xs | a:b:xs <- xs, isWindows && sep a && sep b = '/' : f ('/':xs) --
             where pre = sep $ head $ o ++ " "
                   pos = sep $ last $ " " ++ o
 
-        g i []        = replicate i ".."
-        g i ("..":xs) = g (i+1) xs
-        g i (".":xs)  = g i xs
-        g 0 (x:xs)    = x : g 0 xs
-        g i (_:xs)    = g (i-1) xs -- equivalent to eliminating ../x
+        g i []         = replicate i ".."
+        g i ("..":xs1) = g (i+1) xs1
+        g i (".":xs2)  = g i xs2
+        g 0 (x:xs3)    = x : g 0 xs3
+        g i (_:xs4)    = g (i-1) xs4 -- equivalent to eliminating ../x
 
-        split xs = if null ys then [] else a : split b
+        split xs5 = if null ys then [] else a : split b
             where (a,b) = break sep ys
-                  ys = dropWhile sep xs
+                  ys = dropWhile sep xs5
 
 -- | Convert to native path separators, namely @\\@ on Windows.
 toNative :: FilePath -> FilePath

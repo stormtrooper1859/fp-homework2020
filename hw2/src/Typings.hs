@@ -14,10 +14,9 @@ import Control.Exception (Exception)
 import Control.Monad.State (State)
 import Control.Monad.Trans.Except (ExceptT)
 import Control.Monad.Trans.Reader (ReaderT)
-import Data.Dynamic (Typeable)
-import Data.IORef
-import Data.HashMap
 import qualified Data.ByteString.Char8 as C
+import Data.Dynamic (Typeable)
+import Data.HashMap
 
 
 data FileSystem = Directory { directoryName :: String, getChildrens :: Map String FileSystem }
@@ -38,5 +37,4 @@ data SubprogramException = SubprogramArgumentsException String | SubprogramRunti
 type SubprogramEnv = ReaderT ApplicationContext (ExceptT SubprogramException (State ApplicationState))
 
 
-type Subprogram = [String] -> SubprogramEnv (Maybe String)
-
+type Subprogram = String -> [String] -> SubprogramEnv (Maybe String)
