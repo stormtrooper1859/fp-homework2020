@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Shit (getFileSystem, FileSystem(..)) where
+module Utils.FileSystem (getFileSystem, syncWithFS) where
 
 import Typings (ApplicationContext(..), ApplicationState(..), SubprogramException(..), Subprogram, FileSystem(..))
 import Programs.ChangeDirectory (changeDirectory)
@@ -33,12 +33,6 @@ import Data.HashMap
 
 
 
-
--- data Metainfo = Metainfo { editDate :: String }
-
--- data FileSystem = Directory { directoryName :: String, getChildrens :: Map String FileSystem } | File { fileName :: String } | Stub deriving (Show)
-
-
 getFileSystem :: FilePath -> IO FileSystem
 getFileSystem path = do
     isDirectory <- doesDirectoryExist path
@@ -52,3 +46,23 @@ getFileSystem path = do
         return Stub
     else do
         return $ File $ takeFileName path
+
+
+
+
+syncWithFS :: FilePath -> FileSystem -> FileSystem -> IO ()
+syncWithFS root previousFS newFS = do
+    validateFS root previousFS
+    writeInFS root newFS
+
+writeInFS :: FilePath -> FileSystem -> IO ()
+writeInFS root newFS = do
+    return ()
+
+validateFS :: FilePath -> FileSystem -> IO ()
+validateFS root snapshotFS = return ()
+
+
+
+
+

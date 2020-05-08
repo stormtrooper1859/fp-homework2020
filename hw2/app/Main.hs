@@ -3,9 +3,9 @@
 module Main where
 
 import Typings (FileSystem(..), ApplicationContext(..), ApplicationState(..), SubprogramException(..), Subprogram)
-import Programs.ChangeDirectory (changeDirectory)
+import Programs (getProgram)
 import Vendor.FilePath (normaliseEx)
-import Shit ( getFileSystem)
+import Utils.FileSystem (getFileSystem, syncWithFS)
 
 import Control.Monad.State
 -- import Control.Monad.Reader
@@ -29,16 +29,6 @@ import System.IO
 import Debug.Trace
 
 
-defaultProgram :: String -> Subprogram
-defaultProgram name _ = return $ Just $ name ++ " not found"
-
--- getProgram :: String -> ReaderT ApplicationContext ExceptT (State ApplicationState ()) 
-getProgram :: String -> Subprogram
-getProgram x = case x of
-            "cd" -> changeDirectory
-            _ -> defaultProgram x
-
-
 
 executeProgram :: ApplicationState -> Subprogram -> [String] -> ReaderT ApplicationContext IO ApplicationState
 executeProgram state program args = do
@@ -50,7 +40,7 @@ executeProgram state program args = do
     return newState
 
 
-commandLoop :: ApplicationState -> ReaderT ApplicationContext IO ()
+commandLoop :: ApplicationState -> ReaderT ApplicationContext IO ApplicationState
 commandLoop state = do
     context <- ask
     let root = getRootPath context
@@ -68,7 +58,7 @@ commandLoop state = do
         case x of
             "q" -> do
                 t2 <- ask
-                return ()
+                return $ state
             _ -> do
                 let prog = getProgram x
                 newState <- executeProgram state prog xs
@@ -88,33 +78,11 @@ smth ((Right (Just a)), state) _ = do
     putStrLn a
     return state
 
+
 getRoot :: IO String
-getRoot = return "./hw1/test"
+getRoot = return "./test_folder"
 
 
-
--- smt :: String -> Int
--- smt line = do
---     let (x : xs) = words line
---     case x of
---         "quit" -> 1
---         "cd" -> 2
-
-
-
--- data Metainfo = Metainfo { editDate :: String }
-
--- data FileSystem = Directory { directoryName :: String, getChildrens :: [FileSystem] } | File { fileName :: String } deriving (Show)
-
--- getFileSystem :: FilePath -> IO FileSystem
--- getFileSystem path = do
---     isDirectory <- doesDirectoryExist path
---     if not isDirectory then do
---         return $ File $ takeFileName path
---     else do
---         childrens <- listDirectory path
---         rez <- mapM (getFileSystem . (path </>)) childrens
---         return $ Directory path rez
 
 main :: IO ()
 main = do
@@ -122,25 +90,8 @@ main = do
     -- putStrLn $ concat args
     root <- getRoot
     currentDirectory <- getCurrentDirectory
-    let realRoot = currentDirectory </> root
+    let realRoot = normaliseEx $ currentDirectory </> root
     fs <- getFileSystem $ realRoot
-    putStrLn $ show fs
-    refRoot <- newIORef "."
-    zero <- newIORef 0
-    runReaderT (commandLoop $ ApplicationState "." fs) (ApplicationContext realRoot fs)
-    -- rez <- readIORef $ currentPath t
-    -- return ()
-    -- putStrLn $ rez
-
-
-
-
-
-
-
-
-
--- parserPrefs :: ParserPrefs
--- parserPrefs = ParserPrefs "" False False False False 1
-
+    newFileSystem <- runReaderT (commandLoop $ ApplicationState "." fs) (ApplicationContext realRoot fs)
+    syncWithFS realRoot fs (getCurrentFileSystem newFileSystem)
 

@@ -20,11 +20,14 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lib
                      , Typings
+                     , Programs
                      , Programs.ChangeDirectory
+                     , Programs.List
+                     , Programs.MakeDirectory
                      , Vendor.FilePath
                      , Utils
-                     , Shit
-  ghc-options:         -Wall
+                     , Utils.FileSystem
+  -- ghc-options:         -Wall
   build-depends:       base >= 4.9 && < 5
                      , mtl
                      , transformers
@@ -38,7 +41,7 @@ library
 executable hw2
   hs-source-dirs:      app
   main-is:             Main.hs
-  ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
+  -- ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , hw2
                      , mtl
