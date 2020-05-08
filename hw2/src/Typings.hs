@@ -3,32 +3,36 @@
 
 module Typings
        ( ApplicationContext(..)
+       , FileSystem(..)
        , ApplicationState(..)
-       , CDException(..)
+       , SubprogramException(..)
        , SubprogramEnv
        , Subprogram
        ) where
 
-import Data.IORef
 import Control.Exception (Exception)
-import Data.Dynamic (Typeable)
 import Control.Monad.State (State)
-import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.Except (ExceptT)
+import Control.Monad.Trans.Reader (ReaderT)
+import Data.Dynamic (Typeable)
+import Data.IORef
+import Data.HashMap
 
-data ApplicationContext = ApplicationContext { getRootPath :: FilePath
-                , currentPath                              :: IORef String
-                , storedValue                              :: IORef Int }
-
-
-data ApplicationState = ApplicationState { currentStatePath :: String } deriving (Show)
-
-
-data CDException = SubprogramException String deriving (Show, Typeable, Exception)
+data FileSystem = Directory { directoryName :: String, getChildrens :: Map String FileSystem } | File { fileName :: String } | Stub deriving (Show)
 
 
-type SubprogramEnv = ReaderT ApplicationContext (ExceptT CDException (State ApplicationState))
+data ApplicationContext = ApplicationContext { getRootPath          :: FilePath
+                                             , getInitialFileSystem :: FileSystem }
 
 
-type Subprogram = [String] -> SubprogramEnv String
+data ApplicationState = ApplicationState { getCurrentStatePath :: String, getCurrentFileSystem :: FileSystem} deriving (Show)
+
+
+data SubprogramException = SubprogramArgumentsException String | SubprogramRuntimeException String deriving (Show, Typeable, Exception)
+
+
+type SubprogramEnv = ReaderT ApplicationContext (ExceptT SubprogramException (State ApplicationState))
+
+
+type Subprogram = [String] -> SubprogramEnv (Maybe String)
 

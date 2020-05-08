@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Shit (getFileSystem) where
+module Shit (getFileSystem, FileSystem(..)) where
 
-import Typings (ApplicationContext(..), ApplicationState(..), CDException(..), Subprogram)
-import Programs.ChangeDirectory (cdOpts, cdCommandWrapper2, changeDirectory)
+import Typings (ApplicationContext(..), ApplicationState(..), SubprogramException(..), Subprogram, FileSystem(..))
+import Programs.ChangeDirectory (changeDirectory)
 import Vendor.FilePath (normaliseEx)
 
 
@@ -21,12 +21,14 @@ import System.FilePath
 import Options.Applicative
 import Data.Semigroup ((<>))
 import Lib
-import Control.Monad.Error
+-- import Control.Monad.Error
+import Control.Monad.Except
 import Data.List
 import System.IO
 
 import Debug.Trace
 
+import Data.HashMap
 
 
 
@@ -34,17 +36,19 @@ import Debug.Trace
 
 -- data Metainfo = Metainfo { editDate :: String }
 
-data FileSystem = Directory { directoryName :: String, getChildrens :: [FileSystem] } | File { fileName :: String } | Stub deriving (Show)
+-- data FileSystem = Directory { directoryName :: String, getChildrens :: Map String FileSystem } | File { fileName :: String } | Stub deriving (Show)
+
 
 getFileSystem :: FilePath -> IO FileSystem
-getFileSystem = undefined
--- getFileSystem path = do
---     isDirectory <- doesDirectoryExist path
---     if isDirectory then do
---         childrens <- listDirectory path
---         rez <- mapM (getFileSystem . (path </>)) childrens
---         return $ Directory path rez
---     else if pathIsSymbolicLink path then do
---         return Stub
---     else do
---         return $ File $ takeFileName path
+getFileSystem path = do
+    isDirectory <- doesDirectoryExist path
+    isSymlink <- pathIsSymbolicLink path
+    if isDirectory then do
+        childrens <- listDirectory path
+        rez <- mapM (\name -> getFileSystem (path </> name) >>= \t -> return (name, t)) childrens
+        let hashMap = fromList rez
+        return $ Directory path hashMap
+    else if isSymlink then do
+        return Stub
+    else do
+        return $ File $ takeFileName path

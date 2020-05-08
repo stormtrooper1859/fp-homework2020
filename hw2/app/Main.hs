@@ -2,10 +2,10 @@
 
 module Main where
 
-import Typings (ApplicationContext(..), ApplicationState(..), CDException(..), Subprogram)
-import Programs.ChangeDirectory (cdOpts, cdCommandWrapper2, changeDirectory)
+import Typings (FileSystem(..), ApplicationContext(..), ApplicationState(..), SubprogramException(..), Subprogram)
+import Programs.ChangeDirectory (changeDirectory)
 import Vendor.FilePath (normaliseEx)
-
+import Shit ( getFileSystem)
 
 import Control.Monad.State
 -- import Control.Monad.Reader
@@ -21,21 +21,22 @@ import System.FilePath
 import Options.Applicative
 import Data.Semigroup ((<>))
 import Lib
-import Control.Monad.Error
+-- import Control.Monad.Error
+import Control.Monad.Except
 import Data.List
 import System.IO
 
 import Debug.Trace
 
 
-defaultProgram :: Subprogram
-defaultProgram _ = return ""
+defaultProgram :: String -> Subprogram
+defaultProgram name _ = return $ Just $ name ++ " not found"
 
 -- getProgram :: String -> ReaderT ApplicationContext ExceptT (State ApplicationState ()) 
 getProgram :: String -> Subprogram
 getProgram x = case x of
             "cd" -> changeDirectory
-            _ -> defaultProgram
+            _ -> defaultProgram x
 
 
 
@@ -45,7 +46,7 @@ executeProgram state program args = do
     let newState1 = runState (runExceptT $ runReaderT (program args) context) state
     -- let newState = execState (runExceptT $ cdCommandWrapper2 params) state
     newState <- lift $ smth newState1 state
-    lift $ putStrLn $ currentStatePath newState
+    -- lift $ putStrLn $ getCurrentStatePath newState
     return newState
 
 
@@ -54,7 +55,7 @@ commandLoop state = do
     context <- ask
     let root = getRootPath context
     -- relPath <- lift $ readIORef $ currentPath ApplicationContext
-    let relPath = currentStatePath state
+    let relPath = getCurrentStatePath state
     lift $ putStr $ (normaliseEx (root </> relPath)) ++ " > "
     lift $ hFlush stdout
     line <- lift getLine
@@ -69,25 +70,28 @@ commandLoop state = do
                 t2 <- ask
                 return ()
             _ -> do
-                lift $ putStrLn $ "im here " ++ x
                 let prog = getProgram x
                 newState <- executeProgram state prog xs
                 commandLoop newState
 
 
-smth :: (Either CDException String, ApplicationState) -> ApplicationState -> IO ApplicationState
-smth ((Left (SubprogramException text)), state) dflt = do
+smth :: (Either SubprogramException (Maybe String), ApplicationState) -> ApplicationState -> IO ApplicationState
+smth ((Left (SubprogramArgumentsException text)), state) dflt = do
+    putStrLn $ "ошибочка в аргументах: " ++ text
+    return dflt
+smth ((Left (SubprogramRuntimeException text)), state) dflt = do
     putStrLn $ "ошибочка вышла: " ++ text
     return dflt
-smth ((Right a), state) _ = do
+smth ((Right Nothing), state) _ = do
+    return state
+smth ((Right (Just a)), state) _ = do
     putStrLn a
     return state
 
 getRoot :: IO String
 getRoot = return "./hw1/test"
 
-defaultCalcState :: ApplicationState
-defaultCalcState = ApplicationState "."
+
 
 -- smt :: String -> Int
 -- smt line = do
@@ -100,17 +104,17 @@ defaultCalcState = ApplicationState "."
 
 -- data Metainfo = Metainfo { editDate :: String }
 
-data FileSystem = Directory { directoryName :: String, getChildrens :: [FileSystem] } | File { fileName :: String } deriving (Show)
+-- data FileSystem = Directory { directoryName :: String, getChildrens :: [FileSystem] } | File { fileName :: String } deriving (Show)
 
-getFileSystem :: FilePath -> IO FileSystem
-getFileSystem path = do
-    isDirectory <- doesDirectoryExist path
-    if not isDirectory then do
-        return $ File $ takeFileName path
-    else do
-        childrens <- listDirectory path
-        rez <- mapM (getFileSystem . (path </>)) childrens
-        return $ Directory path rez
+-- getFileSystem :: FilePath -> IO FileSystem
+-- getFileSystem path = do
+--     isDirectory <- doesDirectoryExist path
+--     if not isDirectory then do
+--         return $ File $ takeFileName path
+--     else do
+--         childrens <- listDirectory path
+--         rez <- mapM (getFileSystem . (path </>)) childrens
+--         return $ Directory path rez
 
 main :: IO ()
 main = do
@@ -123,10 +127,11 @@ main = do
     putStrLn $ show fs
     refRoot <- newIORef "."
     zero <- newIORef 0
-    runReaderT (commandLoop defaultCalcState) (ApplicationContext realRoot refRoot zero)
+    runReaderT (commandLoop $ ApplicationState "." fs) (ApplicationContext realRoot fs)
     -- rez <- readIORef $ currentPath t
     -- return ()
     -- putStrLn $ rez
+
 
 
 

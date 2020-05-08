@@ -1,84 +1,67 @@
 module Programs.ChangeDirectory
-       ( cdOpts
-       , cdCommandWrapper2
-       , changeDirectory
+       ( changeDirectory
        ) where
 
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.State
-import Control.Monad.Trans
-import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
-import Data.IORef
+import Data.HashMap
 import Data.List
 import Data.Semigroup ((<>))
-import Lib
 import Options.Applicative
-import System.Directory
-import System.Environment
 import System.FilePath
 
-import Typings (ApplicationContext (..), ApplicationState (..), CDException (..), SubprogramEnv, Subprogram)
+import Typings (ApplicationContext (..), ApplicationState (..), FileSystem (..), Subprogram,
+                SubprogramEnv, SubprogramException (..))
+import Utils (combineProgram)
 import Vendor.FilePath (normaliseEx)
-import Utils (parserPrefs)
 
 
 data ChangeDirectoryOptions = ChangeDirectoryOptions
   { changeDirectoryTo :: String } deriving (Show)
 
-changeDirectoryParser :: Parser ChangeDirectoryOptions
-changeDirectoryParser = ChangeDirectoryOptions
+changeDirectoryParamsParser :: Parser ChangeDirectoryOptions
+changeDirectoryParamsParser = ChangeDirectoryOptions
       <$> argument str
           ( metavar "DIRECTORY"
          <> help "Change directory to the DIRECTORY" )
 
 
-cdOpts :: ParserInfo ChangeDirectoryOptions
-cdOpts = info (changeDirectoryParser <**> helper) ( fullDesc
+changeDirectoryCli :: ParserInfo ChangeDirectoryOptions
+changeDirectoryCli = info (changeDirectoryParamsParser <**> helper) ( fullDesc
             <> progDesc "Change directory to the TARGET"
             <> header "cd - a test for optparse-applicative" )
 
 
--- greet :: ParserResult ChangeDirectoryOptions -> IO ()
--- greet (Success (ChangeDirectoryOptions h)) = putStrLn $ "Hello, " ++ h
--- greet _ = return ()
+-- проверяем что остались в рабочем каталоге
+isPathCorrect :: FilePath -> Bool
+isPathCorrect diff = not (isRelative diff) || (isPrefixOf (".." ++ [pathSeparator]) diff) || (".." == diff)
 
--- cdCommandWrapper :: ParserResult ChangeDirectoryOptions -> IO ()
--- cdCommandWrapper (Success a) = putStrLn $ show a
--- cdCommandWrapper f = putStrLn $ show f
+-- проверяем что данный путь существует в нашем рабочем каталоге
+isPathExist :: FileSystem -> FilePath -> Bool
+isPathExist fs filePath = isPathExistInternal fs $ splitDirectories filePath
+    where
+        isPathExistInternal dir@(Directory _ _) ("." : xs) = isPathExistInternal dir xs
+        isPathExistInternal (Directory _ children) (x : xs) = isPathExistInternal (findWithDefault Stub x children) xs
+        isPathExistInternal (Directory _ _) [] = True
+        isPathExistInternal _ _ = False
 
 
-cdCommandWrapper2 :: ParserResult ChangeDirectoryOptions -> SubprogramEnv String
-cdCommandWrapper2 (Success a) = do
-    cdCommand a
-    return ""
-cdCommandWrapper2 f = throwError $ SubprogramException $ show f
-
--- cdCommand :: ChangeDirectoryOptions -> State ApplicationState ()
-cdCommand :: ChangeDirectoryOptions -> SubprogramEnv ()
-cdCommand options = do
-    state <- get
+changeDirectoryExecutor :: ChangeDirectoryOptions -> SubprogramEnv (Maybe String)
+changeDirectoryExecutor options = do
+    appState <- get
     rootPath <- asks getRootPath
-    let futurePath = normaliseEx $ currentStatePath state </> changeDirectoryTo options
-    let diff = makeRelative rootPath futurePath
-    if
-        not (isRelative diff) || (isPrefixOf (".." ++ [pathSeparator]) diff) || (".." == diff)
-    then
-        throwError $ SubprogramException "Нельзя покинуть рабочую директорию"
-    else
-        lift $ put $ ApplicationState $ normaliseEx $ currentStatePath state </> changeDirectoryTo options
-
+    let futureFullPath = normaliseEx $ getCurrentStatePath appState </> changeDirectoryTo options
+    let diff = makeRelative rootPath futureFullPath
+    if isPathCorrect diff then
+        throwError $ SubprogramRuntimeException "Нельзя покинуть рабочий каталог"
+    else do
+        if isPathExist (getCurrentFileSystem appState) diff then do
+            lift $ put $ appState {getCurrentStatePath = normaliseEx $ getCurrentStatePath appState </> changeDirectoryTo options}
+            return Nothing
+        else
+            throwError $ SubprogramRuntimeException "Заданный путь не существует"
 
 
 changeDirectory :: Subprogram
-changeDirectory params = do
-    let params2 = execParserPure parserPrefs cdOpts params
-    cdCommandWrapper2 params2
-
--- main :: IO ()
--- main = do
---     args <- getArgs
---     let params = execParserPure parserPrefs opts args
---     -- params <- execParser opts
---     greet params
-
+changeDirectory = combineProgram changeDirectoryExecutor changeDirectoryCli
