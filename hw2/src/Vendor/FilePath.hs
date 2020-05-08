@@ -3,8 +3,8 @@ module Vendor.FilePath
        ) where
 
 import System.Directory (canonicalizePath)
-import System.Info.Extra
 import qualified System.FilePath as Native
+import System.Info.Extra
 
 
 -- copy-paste from https://hackage.haskell.org/package/shake-0.18.5/docs/src/Development.Shake.FilePath.html#normaliseEx
@@ -31,19 +31,19 @@ normaliseEx xs | a:b:xs <- xs, isWindows && sep a && sep b = '/' : f ('/':xs) --
 
         deslash o x
             | x == "/" = case (pre,pos) of
-                (True,True) -> "/"
-                (True,False) -> "/."
-                (False,True) -> "./"
+                (True,True)   -> "/"
+                (True,False)  -> "/."
+                (False,True)  -> "./"
                 (False,False) -> "."
             | otherwise = (if pre then id else tail) $ (if pos then id else init) x
             where pre = sep $ head $ o ++ " "
                   pos = sep $ last $ " " ++ o
 
-        g i [] = replicate i ".."
+        g i []        = replicate i ".."
         g i ("..":xs) = g (i+1) xs
-        g i (".":xs) = g i xs
-        g 0 (x:xs) = x : g 0 xs
-        g i (_:xs) = g (i-1) xs -- equivalent to eliminating ../x
+        g i (".":xs)  = g i xs
+        g 0 (x:xs)    = x : g 0 xs
+        g i (_:xs)    = g (i-1) xs -- equivalent to eliminating ../x
 
         split xs = if null ys then [] else a : split b
             where (a,b) = break sep ys

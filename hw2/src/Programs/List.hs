@@ -2,44 +2,41 @@ module Programs.List
        ( list
        ) where
 
-import Control.Monad.Except
-import Control.Monad.State
-import Control.Monad.Trans.Reader
-import Data.HashMap
-import Data.List
+import qualified Data.HashMap as HM
+import Data.List (intersperse, sort)
 import Data.Semigroup ((<>))
 import Options.Applicative
-import System.FilePath
 
-import Typings (ApplicationContext (..), ApplicationState (..), FileSystem (..), Subprogram,
-                SubprogramEnv, SubprogramException (..))
-import Utils (combineProgram, getDirectory, throwIf, getNewLocalPath)
-import Vendor.FilePath (normaliseEx)
+import Typings (FileSystem (..), Subprogram, SubprogramEnv)
+import Utils (combineProgram, getDefault, getDirectory, getNewLocalPath)
 
-import Debug.Trace
 
-data ListOptions = ListOptions
-  { queryOptionsPath :: String } deriving (Show)
+data ListOptions = ListOptions { queryPath :: Maybe String, printByLine :: Bool } deriving (Show)
+
 
 listParamsParser :: Parser ListOptions
 listParamsParser = ListOptions
-      <$> argument str
-          ( metavar "DIRECTORY"
-         <> help "Change directory to the DIRECTORY" )
+    <$> optional ( argument str
+        ( metavar "PATH"
+        <> help "Show content of directory by PATH" ))
+    <*> switch
+        ( long "lines"
+        <> short 'l'
+        <> help "Print directories by lines" )
 
 
 listCli :: ParserInfo ListOptions
 listCli = info (listParamsParser <**> helper) ( fullDesc
-            <> progDesc "Change directory to the TARGET"
-            <> header "cd - a test for optparse-applicative" )
+    <> progDesc "Show content of directory by PATH"
+    <> header "ls - utiliry for showing subdirectories and files in directory" )
 
 
 listExecutor :: ListOptions -> SubprogramEnv (Maybe String)
 listExecutor options = do
-    appState <- get
-    queryPath <- getNewLocalPath $ queryOptionsPath options
-    queryFS <- getDirectory queryPath
-    return $ Just $ concat $ intersperse "\t" $ sort $ keys $ getChildrens queryFS
+    queryPathQ <- getNewLocalPath $ getDefault (queryPath options) "."
+    queryFS <- getDirectory queryPathQ
+    let delimiter = if printByLine options then "\n" else "\t"
+    return $ Just $ concat $ intersperse delimiter $ sort $ HM.keys $ getChildrens queryFS
 
 
 list :: Subprogram

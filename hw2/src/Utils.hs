@@ -6,6 +6,7 @@ module Utils
        , throwIf
        , isPathOutside
        , getNewLocalPath
+       , getDefault
        ) where
 
 import Options.Applicative
@@ -18,7 +19,6 @@ import Control.Monad.Trans.Reader
 import Data.IORef
 import Data.List
 import Data.Semigroup ((<>))
-import Lib
 import System.Directory
 import System.Environment
 import System.FilePath
@@ -42,7 +42,11 @@ combineProgram program parser = \args -> do
 
 cdCommandWrapper2 :: (Show a) => (a -> SubprogramEnv (Maybe String)) -> ParserResult a -> SubprogramEnv (Maybe String)
 cdCommandWrapper2 program (Success a) = program a
-cdCommandWrapper2 program f = throwError $ SubprogramArgumentsException $ show f
+cdCommandWrapper2 program (Failure msg) = do
+    let (helpMessage, b, c) = execFailure msg "<prog name must be here>"
+    throwError $ SubprogramArgumentsException $ show helpMessage
+
+
 
 
 getDirectory :: FilePath -> SubprogramEnv FileSystem
@@ -91,3 +95,8 @@ getNewLocalPath path = do
     let newLocalPath = makeRelative rootPath futureFullPath 
     throwIf (isPathOutside newLocalPath) $ SubprogramRuntimeException "Нельзя покинуть рабочий каталог"
     return newLocalPath
+
+
+getDefault :: Maybe a -> a -> a
+getDefault Nothing a = a
+getDefault (Just a) _ = a

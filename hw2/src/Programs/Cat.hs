@@ -2,11 +2,9 @@ module Programs.Cat
        ( cat
        ) where
 
-import Control.Monad.Except
 import Control.Monad.State
 import Control.Monad.Trans.Reader
 import Data.HashMap
-import Data.List
 import Data.Semigroup ((<>))
 import Options.Applicative
 import System.FilePath
@@ -16,35 +14,28 @@ import Typings (ApplicationContext (..), ApplicationState (..), FileSystem (..),
 import Utils (combineProgram, getDirectory, throwIf, getNewLocalPath, replaceFs)
 import Vendor.FilePath (normaliseEx)
 
-import Debug.Trace
 
-data ListOptions = ListOptions
-  { changeDirectoryTo :: String } deriving (Show)
+data CatOptions = CatOptions { queryPath :: String } deriving (Show)
 
-catParamsParser :: Parser ListOptions
-catParamsParser = ListOptions
+catParamsParser :: Parser CatOptions
+catParamsParser = CatOptions
       <$> argument str
           ( metavar "PATH"
-         <> help "Create directory by the PATH" )
+         <> help "Read file by the PATH" )
 
 
-catCli :: ParserInfo ListOptions
+catCli :: ParserInfo CatOptions
 catCli = info (catParamsParser <**> helper) ( fullDesc
-            <> progDesc "Change directory to the TARGET"
-            <> header "cd - a test for optparse-applicative" )
+            <> progDesc "Read file by the PATH"
+            <> header "cat - utility to print data from file" )
 
 
-catExecutor :: ListOptions -> SubprogramEnv (Maybe String)
+catExecutor :: CatOptions -> SubprogramEnv (Maybe String)
 catExecutor options = do
-    appState <- get
-    rootPath <- asks getRootPath
-    let (diff1, nf) = splitFileName $ normalise $ changeDirectoryTo options
-    diff <- getNewLocalPath diff1
-
-    futureFs <- getDirectory diff
-    let ht = getChildrens futureFs
-    let file = Data.HashMap.lookup nf ht
-    -- res <- show $ fileContent file
+    let (pathToFileQ, fileName) = splitFileName $ normaliseEx $ queryPath options
+    pathToFile <- getNewLocalPath pathToFileQ
+    folder <- getDirectory pathToFile
+    let file = Data.HashMap.lookup fileName $ getChildrens folder
     return (file >>= \f -> return $ show $ fileContent f)
 
 

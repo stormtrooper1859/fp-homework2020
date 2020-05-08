@@ -20,7 +20,6 @@ import System.Directory
 import System.FilePath
 import Options.Applicative
 import Data.Semigroup ((<>))
-import Lib
 -- import Control.Monad.Error
 import Control.Monad.Except
 import Data.List
