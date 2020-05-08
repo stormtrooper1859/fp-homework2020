@@ -18,9 +18,28 @@ tested-with:         GHC == 8.0.1
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib
+  exposed-modules:     Typings
+                     , Programs
+                     , Programs.ChangeDirectory
+                     , Programs.List
+                     , Programs.MakeDirectory
+                     , Programs.Cat
+                     , Programs.WriteDataInFile
+                     , Programs.Remove
+                     , Vendor.FilePath
+                     , Utils
+                     , Utils.FileSystem
+                     , FileManager
   ghc-options:         -Wall
   build-depends:       base >= 4.9 && < 5
+                     , mtl
+                     , transformers
+                     , directory
+                     , filepath
+                     , optparse-applicative
+                     , extra
+                     , hashmap
+                     , bytestring
   default-language:    Haskell2010
 
 executable hw2
@@ -29,4 +48,12 @@ executable hw2
   ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , hw2
+                     , mtl
+                     , transformers
+                     , directory
+                     , filepath
+                     , optparse-applicative
+                     , extra
+                     , hashmap
+                     , bytestring
   default-language:    Haskell2010
