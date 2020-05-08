@@ -17,8 +17,12 @@ import Control.Monad.Trans.Reader (ReaderT)
 import Data.Dynamic (Typeable)
 import Data.IORef
 import Data.HashMap
+import qualified Data.ByteString.Char8 as C
 
-data FileSystem = Directory { directoryName :: String, getChildrens :: Map String FileSystem } | File { fileName :: String } | Stub deriving (Show)
+
+data FileSystem = Directory { directoryName :: String, getChildrens :: Map String FileSystem }
+                | File { fileName :: String, fileContent :: C.ByteString }
+                | Symlink deriving (Show)
 
 
 data ApplicationContext = ApplicationContext { getRootPath          :: FilePath

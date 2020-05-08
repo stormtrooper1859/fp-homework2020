@@ -29,7 +29,7 @@ import System.IO
 import Debug.Trace
 
 import Data.HashMap
-
+import qualified Data.ByteString.Char8 as C
 
 
 
@@ -43,11 +43,10 @@ getFileSystem path = do
         let hashMap = fromList rez
         return $ Directory path hashMap
     else if isSymlink then do
-        return Stub
+        return Symlink
     else do
-        return $ File $ takeFileName path
-
-
+        fileData <- C.readFile path
+        return $ File (takeFileName path) fileData
 
 
 syncWithFS :: FilePath -> FileSystem -> FileSystem -> IO ()
@@ -56,8 +55,17 @@ syncWithFS root previousFS newFS = do
     writeInFS root newFS
 
 writeInFS :: FilePath -> FileSystem -> IO ()
-writeInFS root newFS = do
+writeInFS root (Directory nm ch) = do
+    createDirectoryIfMissing False root
+    let ks = Data.HashMap.assocs ch
+    mapM (\(dir, fs) -> writeInFS (root </> dir) fs) ks
     return ()
+writeInFS root (File nm cnt) = do
+    C.writeFile root cnt
+    -- createDirectoryIfMissing False root
+    -- return ()
+writeInFS _ _ = return ()
+
 
 validateFS :: FilePath -> FileSystem -> IO ()
 validateFS root snapshotFS = return ()

@@ -42,7 +42,6 @@ combineProgram program parser = \args -> do
 
 cdCommandWrapper2 :: (Show a) => (a -> SubprogramEnv (Maybe String)) -> ParserResult a -> SubprogramEnv (Maybe String)
 cdCommandWrapper2 program (Success a) = program a
-    -- return $ Nothing
 cdCommandWrapper2 program f = throwError $ SubprogramArgumentsException $ show f
 
 
@@ -53,7 +52,7 @@ getDirectory filePath = do
     where
         isPathExistInternal :: FileSystem -> [String] -> SubprogramEnv FileSystem
         isPathExistInternal dir@(Directory _ _) ("." : xs) = isPathExistInternal dir xs
-        isPathExistInternal (Directory _ children) (x : xs) = isPathExistInternal (findWithDefault Stub x children) xs
+        isPathExistInternal (Directory _ children) (x : xs) = isPathExistInternal (findWithDefault Symlink x children) xs
         isPathExistInternal dir@(Directory _ _) [] = return dir
         isPathExistInternal _ _ = throwError $ SubprogramRuntimeException "Заданный путь не существует"
 
@@ -66,7 +65,7 @@ replaceFs filePath newFolder = do
         replaceFsInternal :: FileSystem -> [String] -> SubprogramEnv FileSystem
         replaceFsInternal dir@(Directory _ _) ("." : restPath) = replaceFsInternal dir restPath
         replaceFsInternal dir@(Directory _ children) (currentKey : restPath) = do
-            let k = findWithDefault Stub currentKey children
+            let k = findWithDefault Symlink currentKey children
             t <- replaceFsInternal k restPath
             return dir{getChildrens = Data.HashMap.insert currentKey t children}
         replaceFsInternal dir [] = return newFolder

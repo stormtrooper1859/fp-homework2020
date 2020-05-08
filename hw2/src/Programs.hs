@@ -6,6 +6,9 @@ import Typings (FileSystem(..), ApplicationContext(..), ApplicationState(..), Su
 import Programs.ChangeDirectory (changeDirectory)
 import Programs.List (list)
 import Programs.MakeDirectory (makeDirectory)
+import Programs.Cat (cat)
+import Programs.Remove (remove)
+import Programs.WriteDataInFile (writeDataInFile)
 import Vendor.FilePath (normaliseEx)
 -- import Shit (getFileSystem)
 
@@ -40,5 +43,8 @@ getProgram x = case x of
             "cd" -> changeDirectory
             "ls" -> list
             "mkdir" -> makeDirectory
+            "cat" -> cat
+            "wf" -> writeDataInFile
+            "rm" -> remove
             _ -> defaultProgram x
 
